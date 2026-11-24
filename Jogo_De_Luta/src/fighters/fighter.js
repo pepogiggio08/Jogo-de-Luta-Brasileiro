@@ -1,7 +1,7 @@
 import FighterState from "./FighterState.js";
 import FighterStateMachine from "./FighterStateMachine.js";
 import FighterMovement from "./FighterMovement.js";
-
+import BodyBox from "../combat/BodyBox.js";
 
 export default class Fighter {
     constructor(config) {
@@ -27,6 +27,7 @@ export default class Fighter {
         this.defenseMultiplier =
             character.combat.defenseMultiplier;
 
+        this.bodyBox = new BodyBox(character.bodyBox);
         // Posição
         this.x = config.x;
         this.y = config.y;

@@ -1,7 +1,9 @@
 
 
 const GameConfig = {
+
     type: Phaser.AUTO,
+    parent: "game-container",
 
     width: 480,
     height: 270,
@@ -12,7 +14,7 @@ const GameConfig = {
     roundPixels: true,
 
     scale: {
-        mode: Phaser.Scale.FIT,
+        mode: Phaser.Scale.ENVELOP,
         autoCenter: Phaser.Scale.CENTER_BOTH
     },
 

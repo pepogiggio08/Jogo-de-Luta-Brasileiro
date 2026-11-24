@@ -14,6 +14,13 @@ const timMaia = {
         damageMultiplier: 1.2,
         defenseMultiplier: 0.9
     },
+    
+    bodyBox: {
+    width: 38,
+    height: 54,
+    offsetX: 0,
+    offsetY: 0
+    },
 
     archetype: "heavy"
 };

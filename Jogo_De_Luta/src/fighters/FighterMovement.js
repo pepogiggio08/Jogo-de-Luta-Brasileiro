@@ -10,6 +10,10 @@ export default class FighterMovement {
         this.velocityX = 0;
         this.velocityY = 0;
 
+        // Deslocamentos pendentes
+        this.pendingDeltaX = 0;
+        this.pendingDeltaY = 0;
+
         // Parâmetros de movimentação
         this.acceleration = 900;
         this.deceleration = 1200;
@@ -52,9 +56,7 @@ export default class FighterMovement {
             );
         }
 
-        this.fighter.x += this.velocityX * delta;
-
-        this.constrainToArena();
+        this.pendingDeltaX = this.velocityX * delta;
     }
 
     stop(deltaTime) {
@@ -73,21 +75,7 @@ export default class FighterMovement {
             );
         }
 
-        this.fighter.x += this.velocityX * delta;
-
-        this.constrainToArena();
-    }
-
-    constrainToArena() {
-        if (this.fighter.x <= this.arena.left) {
-            this.fighter.x = this.arena.left;
-            this.velocityX = Math.max(0, this.velocityX);
-        }
-
-        if (this.fighter.x >= this.arena.right) {
-            this.fighter.x = this.arena.right;
-            this.velocityX = Math.min(0, this.velocityX);
-        }
+        this.pendingDeltaX = this.velocityX * delta;
     }
 
     jump() {
@@ -106,24 +94,13 @@ export default class FighterMovement {
     update(deltaTime) {
         const delta = deltaTime / 1000;
 
+        this.pendingDeltaY = 0;
+
         // Física do salto
         if (!this.isGrounded) {
             this.velocityY += this.gravity * delta;
-            this.fighter.y += this.velocityY * delta;
 
-            if (this.fighter.y >= this.groundLevel) {
-                this.fighter.y = this.groundLevel;
-                this.velocityY = 0;
-
-                this.isGrounded = true;
-                this.isJumping = false;
-
-                this.landingTimer = this.landingDuration;
-
-                this.fighter.stateMachine.transition(
-                    FighterState.LANDING
-                );
-            }
+            this.pendingDeltaY = this.velocityY * delta;
         }
 
         // Aterrissagem
@@ -139,6 +116,32 @@ export default class FighterMovement {
         } else if (this.isGrounded) {
             this.updateGroundState();
         }
+    }
+
+    applyMovement(deltaX, deltaY) {
+        this.fighter.x += deltaX;
+        this.fighter.y += deltaY;
+
+        // Verifica chegada ao chão
+        if (this.fighter.y >= this.groundLevel) {
+            this.fighter.y = this.groundLevel;
+
+            if (!this.isGrounded) {
+                this.velocityY = 0;
+                this.isGrounded = true;
+                this.isJumping = false;
+
+                this.landingTimer = this.landingDuration;
+
+                this.fighter.stateMachine.transition(
+                    FighterState.LANDING
+                );
+            }
+        }
+
+        // Limpa os deslocamentos pendentes
+        this.pendingDeltaX = 0;
+        this.pendingDeltaY = 0;
     }
 
     updateGroundState() {

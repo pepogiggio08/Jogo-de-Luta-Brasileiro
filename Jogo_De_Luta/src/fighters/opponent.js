@@ -12,6 +12,12 @@ const opponent = {
         damageMultiplier: 1.0,
         defenseMultiplier: 1.0
     },
+    bodyBox: {
+    width: 30,
+    height: 52,
+    offsetX: 0,
+    offsetY: 0
+    },
     archetype: "balanced"
 };
 

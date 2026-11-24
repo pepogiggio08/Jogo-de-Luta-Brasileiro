@@ -4,6 +4,9 @@ import timMaia from "../fighters/timMaia.js";
 import InputController from "../input/InputController.js";
 import DebugOverlay from "../debug/DebugOverlay.js";
 import opponent from "../fighters/opponent.js";
+import CollisionSystem from "../combat/CollisionSystem.js";
+import CameraController from "../camera/CameraController.js";
+
 
 
 
@@ -17,27 +20,56 @@ export default class FightScene extends Phaser.Scene {
         const width = this.scale.width;
         const height = this.scale.height;
 
-        this.add.rectangle(width / 2, height / 2, width, height, 0x28334a);
-        this.add.rectangle(width / 2, height * 0.65, width, 2, 0xd5b36d);
-        this.add.rectangle(width / 2, height * 0.85, width, height * 0.30, 0x34343f);
+        this.add.rectangle(
+            400,
+            height / 2,
+            800,
+            height,
+            0x28334a
+        );
+
+        this.add.rectangle(
+            400,
+            height * 0.65,
+            800,
+            2,
+            0xd5b36d
+        );
+
+        this.add.rectangle(
+            400,
+            height * 0.85,
+            800,
+            height * 0.30,
+            0x34343f
+        );
 
         this.arena = {
-            left: 32,
-            right: width - 32,
+            left: 0,
+            right: 800,
             groundLevel: height * 0.70
         };
 
+        this.cameras.main.setBounds(
+            this.arena.left,
+            0,
+            this.arena.right - this.arena.left,
+            height
+        );
+
+
+        this.collisionSystem = new CollisionSystem(this.arena);
         // Criação dos lutadores
         this.tim = new Fighter({
             data: timMaia,
-            x: 120,
+            x: 150,
             y: this.arena.groundLevel,
             facing: 1
         });
 
         this.opponent = new Fighter({
             data: opponent,
-            x: 360,
+            x: 330,
             y: this.arena.groundLevel,
             facing: -1
         });
@@ -45,6 +77,14 @@ export default class FightScene extends Phaser.Scene {
         // Inicialização da movimentação
         this.tim.initializeMovement(this.arena);
         this.opponent.initializeMovement(this.arena);
+
+
+        this.cameraController = new CameraController(
+            this,
+            this.tim,
+            this.opponent,
+            this.arena
+        );
 
         // Controlador de entrada
         this.inputController = new InputController(this);
@@ -100,7 +140,38 @@ export default class FightScene extends Phaser.Scene {
         this.tim.movement.update(delta);
         this.opponent.movement.update(delta);
 
-        this.resolveFighterCollision();
+        const movements = this.collisionSystem.resolve([
+            this.tim,
+            this.opponent
+        ]);
+
+        const cameraMovement = this.cameraController.getCameraMovement(
+            delta,
+            movements[0].deltaX,
+            movements[1].deltaX
+            
+        );
+
+        const visibleBounds =
+        this.cameraController.getVisibleBounds(cameraMovement);
+
+        this.collisionSystem.clampToVisibleBounds(
+            [this.tim, this.opponent],
+            movements,
+            visibleBounds
+        );
+ 
+        this.tim.movement.applyMovement(
+            movements[0].deltaX,
+            movements[0].deltaY
+        );
+
+        this.opponent.movement.applyMovement(
+            movements[1].deltaX,
+            movements[1].deltaY
+        );
+
+        this.cameraController.applyCameraMovement(cameraMovement);
 
         this.updateFighterFacing();
 
@@ -111,67 +182,10 @@ export default class FightScene extends Phaser.Scene {
             this.opponent.y - 20
         );
 
-        this.debugOverlay.update();
+        this.debugOverlay.update(
+        this.collisionSystem.debugInfo
+    );
         
     }
-
-
-    
-    resolveFighterCollision() {
-        const minimumDistance = 24;
-        const verticalTolerance = 30;
-
-        const fighters = [this.tim, this.opponent];
-
-        const verticalDistance = Math.abs(
-            fighters[0].y - fighters[1].y
-        );
-
-        // Não existe colisão corporal se estiverem
-        // suficientemente separados na vertical.
-        if (verticalDistance >= verticalTolerance) return;
-
-        const leftFighter = fighters[0].x <= fighters[1].x
-            ? fighters[0]
-            : fighters[1];
-
-        const rightFighter = fighters[0].x <= fighters[1].x
-            ? fighters[1]
-            : fighters[0];
-
-        const distance = rightFighter.x - leftFighter.x;
-        const overlap = minimumDistance - distance;
-
-        if (overlap <= 0) return;
-
-        let leftTarget = leftFighter.x - overlap / 2;
-        let rightTarget = rightFighter.x + overlap / 2;
-
-        if (leftTarget < this.arena.left) {
-            const correction = this.arena.left - leftTarget;
-            leftTarget = this.arena.left;
-            rightTarget += correction;
-        }
-
-        if (rightTarget > this.arena.right) {
-            const correction = rightTarget - this.arena.right;
-            rightTarget = this.arena.right;
-            leftTarget -= correction;
-        }
-
-        leftFighter.x = Math.max(this.arena.left, leftTarget);
-        rightFighter.x = Math.min(this.arena.right, rightTarget);
-
-        if (leftFighter.movement.velocityX > 0) {
-            leftFighter.movement.velocityX = 0;
-        }
-
-        if (rightFighter.movement.velocityX < 0) {
-            rightFighter.movement.velocityX = 0;
-        }
-    }
-
-
-
 
 }

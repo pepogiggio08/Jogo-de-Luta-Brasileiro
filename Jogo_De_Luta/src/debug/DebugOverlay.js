@@ -17,7 +17,7 @@ export default class DebugOverlay {
         this.text.setDepth(1000);
     }
 
-    update() {
+    update(collisionInfo = null) {
         const fighter = this.fighter;
         const movement = fighter.movement;
 
@@ -29,6 +29,9 @@ export default class DebugOverlay {
             `No chao: ${movement.isGrounded ? "Sim" : "Nao"}`,
             `Velocidade Y: ${movement.velocityY.toFixed(1)}`,
             `Direcao: ${fighter.facing}`,
+            `Sobreposicao: ${collisionInfo ? collisionInfo.overlap.toFixed(2) : "-"}`,
+            `Delta A: ${collisionInfo ? collisionInfo.deltaA.toFixed(2) : "-"}`,
+            `Delta B: ${collisionInfo ? collisionInfo.deltaB.toFixed(2) : "-"}`
         ]);
     }
 }
