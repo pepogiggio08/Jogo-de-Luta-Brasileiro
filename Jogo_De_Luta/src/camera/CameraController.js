@@ -10,6 +10,10 @@ export default class CameraController {
 
         this.camera = scene.cameras.main;
         this.screenMargin = 0;
+        // Controle vertical da câmera
+        this.verticalFollowSpeed = 3;
+        this.maxVerticalOffset = 35;
+        this.currentVerticalOffset = 0;
     }
     
     
@@ -58,6 +62,34 @@ export default class CameraController {
         return (
             clampedTarget - this.camera.scrollX
         ) * smoothing;
+    }
+
+    getVerticalCameraMovement(delta) {
+    const movement = this.fighterA.movement;
+
+    let targetOffset = 0;
+
+    if (!movement.isGrounded) {
+        const jumpHeight = Math.max(
+            0,
+            movement.groundLevel - this.fighterA.y
+        );
+
+        targetOffset = Math.min(
+            jumpHeight * 0.35,
+            this.maxVerticalOffset
+        );
+    }
+
+    const smoothing = 1 - Math.exp(
+        -this.verticalFollowSpeed * delta / 1000
+    );
+
+    this.currentVerticalOffset += (
+        targetOffset - this.currentVerticalOffset
+    ) * smoothing;
+
+    return this.currentVerticalOffset;
     }
 
 

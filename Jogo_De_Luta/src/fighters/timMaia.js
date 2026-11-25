@@ -6,7 +6,7 @@ const timMaia = {
     stats: {
         maxHealth: 1200,
         movementSpeed: 145,
-        jumpForce: 420,
+        jumpForce: 480,
         weight: 1.3
     },
 

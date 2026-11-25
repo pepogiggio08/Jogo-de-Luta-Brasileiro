@@ -17,11 +17,14 @@ export default class FighterMovement {
         // Parâmetros de movimentação
         this.acceleration = 900;
         this.deceleration = 1200;
-        this.gravity = 1200;
+        this.gravity = 1100;
+
+        // Preparação do salto
+        this.isPreparingJump = false;
 
         // Aterrissagem
         this.landingTimer = 0;
-        this.landingDuration = 0.12;
+        this.landingDuration = 17 / 30;
 
         this.groundLevel = arena.groundLevel;
 
@@ -78,17 +81,35 @@ export default class FighterMovement {
         this.pendingDeltaX = this.velocityX * delta;
     }
 
+    // Inicia a preparação do salto, sem aplicar a física ainda.
     jump() {
-        if (!this.isGrounded) return;
+        if (!this.isGrounded || this.isPreparingJump) {
+            return false;
+        }
+
+        this.isPreparingJump = true;
+
+        this.fighter.stateMachine.transition(
+            FighterState.JUMP
+        );
+
+        return true;
+    }
+
+    // Chamado somente quando termina a animação de preparação.
+    launchJump() {
+        if (!this.isPreparingJump || !this.isGrounded) {
+            return false;
+        }
+
+        this.isPreparingJump = false;
 
         this.velocityY = -this.fighter.jumpForce;
 
         this.isGrounded = false;
         this.isJumping = true;
 
-        this.fighter.stateMachine.transition(
-            FighterState.JUMP
-        );
+        return true;
     }
 
     update(deltaTime) {
@@ -103,17 +124,23 @@ export default class FighterMovement {
             this.pendingDeltaY = this.velocityY * delta;
         }
 
+        const currentState =
+            this.fighter.stateMachine.getState();
+
         // Aterrissagem
         if (
             this.isGrounded &&
-            this.fighter.state === FighterState.LANDING
+            currentState === FighterState.LANDING
         ) {
             this.landingTimer -= delta;
 
             if (this.landingTimer <= 0) {
                 this.updateGroundState();
             }
-        } else if (this.isGrounded) {
+        } else if (
+            this.isGrounded &&
+            !this.isPreparingJump
+        ) {
             this.updateGroundState();
         }
     }
@@ -147,14 +174,14 @@ export default class FighterMovement {
     updateGroundState() {
         const isMoving = Math.abs(this.velocityX) > 1;
 
-        if (isMoving) {
-            this.fighter.stateMachine.transition(
-                FighterState.WALK
-            );
-        } else {
-            this.fighter.stateMachine.transition(
-                FighterState.IDLE
-            );
+        const nextState = isMoving
+            ? FighterState.WALK
+            : FighterState.IDLE;
+
+        if (
+            this.fighter.stateMachine.getState() !== nextState
+        ) {
+            this.fighter.stateMachine.transition(nextState);
         }
     }
 }
